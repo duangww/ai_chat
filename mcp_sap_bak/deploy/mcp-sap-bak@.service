@@ -1,0 +1,17 @@
+[Unit]
+Description=mcp-sap-bak (%i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/mcp/mcp-sap-bak
+EnvironmentFile=/etc/mcp/mcp-sap-bak-%i.env
+ExecStart=/usr/bin/node /opt/mcp/mcp-sap-bak/dist/index.js
+Restart=on-failure
+RestartSec=3
+# systemd 已注入环境变量；包内 .env 不会覆盖（override:false）
+
+[Install]
+WantedBy=multi-user.target

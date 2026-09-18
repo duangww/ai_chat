@@ -1,0 +1,23 @@
+node_modules/
+dist/
+*.log
+_api_doc_parsed.txt
+~$*.xlsx
+.DS_Store
+
+# 账号 / 密码 / Token（示例文件可提交）
+.env
+.env.*
+!.env.example
+deploy/*.env
+!deploy/*.env.example
+data/
+*.pem
+*.p12
+*.pfx
+.tmp-*-token.txt
+mcp管理员密码.txt
+*密码*.txt
+*secret*.txt
+*credentials*.json
+.credentials*.json

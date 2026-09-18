@@ -1,0 +1,4 @@
+/* frontend/src/styles/index.css */
+@import './variables.css';
+@import './reset.css';
+@import './global.css';

@@ -1,0 +1,16 @@
+[Unit]
+Description=MCP SAP bak (Streamable HTTP)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/mcp/mcp-sap-bak
+ExecStart=/usr/bin/node /opt/mcp/mcp-sap-bak/dist/index.js
+Restart=on-failure
+RestartSec=3
+Environment=NODE_ENV=production
+# 密钥在 WorkingDirectory/.env 中加载；也可在此覆盖：
+# Environment=MCP_AUTH_TOKEN=xxx
+
+[Install]
+WantedBy=multi-user.target

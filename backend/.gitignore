@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+
+# 账号 / 密码 / Token
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+*密码*.txt
+*secret*.txt

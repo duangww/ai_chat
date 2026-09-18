@@ -1,0 +1,12 @@
+[Unit]
+Description=MCP SAP BAK (Streamable HTTP)
+After=network.target
+[Service]
+Type=simple
+WorkingDirectory=/opt/mcp/mcp-sap-bak
+ExecStart=/usr/bin/node /opt/mcp/mcp-sap-bak/dist/index.js
+Restart=on-failure
+RestartSec=3
+Environment=NODE_ENV=production
+[Install]
+WantedBy=multi-user.target

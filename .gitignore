@@ -1,0 +1,23 @@
+node_modules/
+dist/
+
+# 账号 / 密码 / Token（各子项目示例 .env.example 可提交）
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+backend/.env.local
+mcp_sap_bak/deploy/*.env
+!mcp_sap_bak/deploy/*.env.example
+mcp_sap_bak/data/
+mcp_sap_bak/mcp管理员密码.txt
+
+*密码*.txt
+*secret*.txt
+*.pem
+*.p12
+*.pfx
+.credentials*.json
+*credentials*.json
+.tmp-*-token.txt
