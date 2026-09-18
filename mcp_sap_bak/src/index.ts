@@ -12,8 +12,7 @@ import { fetchSapAllowedTools } from "./accounts/sap-tools.js";
 import { deriveKey } from "./accounts/crypto.js";
 import { AccountStore } from "./accounts/store.js";
 import { mountAdminRoutes } from "./admin/routes.js";
-import { mountOAuthRoutes, publicApiBase, publicMcpUrl, publicLoginPath, resourceMetadataUrl } from "./auth/oauth.js";
-import { loginPageHtml } from "./auth/login-page.js";
+import { mountOAuthRoutes, publicLoginPath, resourceMetadataUrl } from "./auth/oauth.js";
 import { SapOAuthProvider } from "./auth/oauth-provider.js";
 import { mcpUnauthorized, mountLoginRoutes } from "./auth/routes.js";
 import { loadConfig, loadHttpConfig } from "./config.js";
@@ -173,16 +172,6 @@ async function main(): Promise<void> {
         accountsKey: deriveKey(http.accountsKey),
         loginTtlMs: http.loginTtlMs,
         loginPath: publicLoginPath(http),
-        renderLogin: ({ pendingId, cancelUrl }) =>
-          loginPageHtml({
-            serverName: http.serverName,
-            mcpUrl: publicMcpUrl(http),
-            apiBase: publicApiBase(http),
-            pendingId,
-            cancelUrl,
-            oauthPopup: true,
-            loginTtlMs: http.loginTtlMs,
-          }),
       })
     : undefined;
 

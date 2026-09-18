@@ -6,9 +6,12 @@ import { loginPageHtml } from "./login-page.js";
 import type { SapOAuthProvider } from "./oauth-provider.js";
 import { verifySapUserLogin } from "./sap-login.js";
 import {
+  clearPendingCookie,
   clearUserSessionCookie,
   cookiePathFromPublicUrl,
+  readPendingCookie,
   readUserSession,
+  setPendingCookie,
   setUserSessionCookie,
 } from "./session.js";
 
@@ -77,7 +80,23 @@ export function mountLoginRoutes(
     };
   };
 
-  app.get("/login", (_req, res) => {
+  app.get("/login", (req, res) => {
+    const qPending = String(req.query.pending || "").trim();
+    const cookiePending = readPendingCookie(req);
+    const pendingId = qPending || cookiePending;
+    let cancelUrl = "";
+    let oauthPending = "";
+    if (pendingId && oauth) {
+      const row = oauth.peekPending(pendingId);
+      if (row) {
+        oauthPending = pendingId;
+        cancelUrl = oauth.denyRedirect(row.params);
+        setPendingCookie(res, pendingId, cookiePath);
+      } else if (cookiePending && !qPending) {
+        clearPendingCookie(res, cookiePath);
+      }
+    }
+    res.setHeader("Cache-Control", "no-store");
     res.type("html").send(
       loginPageHtml({
         serverName: http.serverName,
@@ -85,10 +104,46 @@ export function mountLoginRoutes(
         apiBase: cookiePathFromPublicUrl(http.publicUrl) === "/"
           ? ""
           : cookiePathFromPublicUrl(http.publicUrl),
+        pendingId: oauthPending || qPending,
+        cancelUrl,
+        oauthPopup: Boolean(oauthPending || qPending),
         loginTtlMs: http.loginTtlMs,
       })
     );
   });
+
+  app.get("/api/login/pending", (req, res) => {
+    const pending = String(req.query.pending || "").trim();
+    const row = pending && oauth ? oauth.peekPending(pending) : undefined;
+    if (!row || !oauth) {
+      res.status(404).json({ ok: false, error: "授权已过期" });
+      return;
+    }
+    res.json({ ok: true, cancelUrl: oauth.denyRedirect(row.params) });
+  });
+
+  const sendCancel = (req: Request, res: Response) => {
+    const pending = String(req.query.pending || req.body?.pending || "").trim();
+    const redirect = pending && oauth ? oauth.cancelPending(pending) : undefined;
+    clearPendingCookie(res, cookiePath);
+    if (redirect && String(req.query.noredirect || "") !== "1") {
+      res.redirect(302, redirect);
+      return;
+    }
+    if (req.method === "GET" && !redirect) {
+      res
+        .status(400)
+        .type("html")
+        .send(
+          "<!DOCTYPE html><meta charset='UTF-8'><p>授权已取消或过期，请回到 WorkBuddy 重新点授权。</p>"
+        );
+      return;
+    }
+    res.status(204).end();
+  };
+
+  app.get("/api/login/cancel", sendCancel);
+  app.post("/api/login/cancel", sendCancel);
 
   app.get("/api/login/status", (req, res) => {
     const session = readUserSession(req, secret);
@@ -130,8 +185,12 @@ export function mountLoginRoutes(
       cookiePath
     );
     let redirect: string | undefined;
-    if (pending && oauth) {
-      redirect = oauth.completePending(sapUsername, undefined, pending);
+    try {
+      if (pending && oauth) {
+        redirect = oauth.completePending(sapUsername, undefined, pending);
+      }
+    } finally {
+      clearPendingCookie(res, cookiePath);
     }
     res.json({
       ok: true,
@@ -174,6 +233,7 @@ export function mountLoginRoutes(
         undefined,
         pending
       );
+      clearPendingCookie(res, cookiePath);
       res.json({ ok: true, redirect });
     } catch (err) {
       sendError(res, 400, err instanceof Error ? err.message : String(err));

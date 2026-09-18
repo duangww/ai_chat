@@ -61,7 +61,6 @@ export class SapOAuthProvider implements OAuthServerProvider {
       accountsKey: Buffer;
       loginTtlMs: number;
       loginPath: string;
-      renderLogin: (opts: { pendingId: string; cancelUrl: string }) => string;
     }
   ) {
     const accounts = store;
@@ -93,6 +92,9 @@ export class SapOAuthProvider implements OAuthServerProvider {
     const req = res.req as Request;
     const session = readUserSession(req, this.opts.sessionSecret);
     if (!session) {
+      for (const [id, row] of this.pending) {
+        if (row.client.client_id === client.client_id) this.pending.delete(id);
+      }
       const pendingId = randomUUID();
       this.pending.set(pendingId, { client, params, createdAt: Date.now() });
       res.redirect(
@@ -109,6 +111,30 @@ export class SapOAuthProvider implements OAuthServerProvider {
         createdAt: Date.now(),
       })
     );
+  }
+
+  denyRedirect(
+    params: AuthorizationParams,
+    description = "login_cancelled"
+  ): string {
+    return oauthClientRedirect(params, {
+      error: "access_denied",
+      error_description: description,
+      state: params.state,
+    });
+  }
+
+  peekPending(pendingId: string): PendingAuth | undefined {
+    this.prune();
+    return this.pending.get(pendingId);
+  }
+
+  cancelPending(pendingId: string): string | undefined {
+    this.prune();
+    const row = this.pending.get(pendingId);
+    if (!row) return undefined;
+    this.pending.delete(pendingId);
+    return this.denyRedirect(row.params, "login_cancelled");
   }
 
   completePending(

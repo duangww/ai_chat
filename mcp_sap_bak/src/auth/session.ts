@@ -2,6 +2,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Request, Response } from "express";
 
 export const USER_COOKIE = "mcp_user";
+export const PENDING_COOKIE = "mcp_oauth_pending";
+const PENDING_COOKIE_MAX_AGE = 10 * 60;
 
 function sign(secret: string, payload: string): string {
   const body = Buffer.from(payload, "utf8").toString("base64url");
@@ -74,6 +76,36 @@ export function clearUserSessionCookie(res: Response, cookiePath: string): void 
   res.setHeader(
     "Set-Cookie",
     `${USER_COOKIE}=; Path=${path}; HttpOnly; SameSite=Lax; Max-Age=0`
+  );
+}
+
+export function readPendingCookie(req: Request): string {
+  const raw = String(readCookie(req, PENDING_COOKIE) || "").trim();
+  if (!raw) return "";
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+export function setPendingCookie(
+  res: Response,
+  pendingId: string,
+  cookiePath: string
+): void {
+  const path = cookiePath || "/";
+  res.append(
+    "Set-Cookie",
+    `${PENDING_COOKIE}=${encodeURIComponent(pendingId)}; Path=${path}; SameSite=Lax; Max-Age=${PENDING_COOKIE_MAX_AGE}`
+  );
+}
+
+export function clearPendingCookie(res: Response, cookiePath: string): void {
+  const path = cookiePath || "/";
+  res.append(
+    "Set-Cookie",
+    `${PENDING_COOKIE}=; Path=${path}; SameSite=Lax; Max-Age=0`
   );
 }
 
